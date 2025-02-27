@@ -328,8 +328,9 @@ def preprocess_multimodal(
     for source in sources:
         for sentence in source:
             if DEFAULT_IMAGE_TOKEN in sentence['value'] and not sentence['value'].startswith(DEFAULT_IMAGE_TOKEN):
+                num_image = sentence['value'].count(DEFAULT_IMAGE_TOKEN)
                 sentence['value'] = sentence['value'].replace(DEFAULT_IMAGE_TOKEN, '').strip()
-                sentence['value'] = DEFAULT_IMAGE_TOKEN + '\n' + sentence['value']
+                sentence['value'] = ( DEFAULT_IMAGE_TOKEN + '\n' ) * num_image + sentence['value']
                 sentence['value'] = sentence['value'].strip()
                 if "mmtag" in conversation_lib.default_conversation.version:
                     sentence['value'] = sentence['value'].replace(DEFAULT_IMAGE_TOKEN, '<Image>' + DEFAULT_IMAGE_TOKEN + '</Image>')
@@ -386,15 +387,21 @@ def preprocess_qwen(sources, tokenizer: transformers.PreTrainedTokenizer, has_im
             role = roles[sentence["from"]]
             if has_image and "<image>" in sentence["value"]:
                 # assert sentence["value"].startswith("<image>"), print(sentence["value"])
-                if sentence["value"].startswith("<image>"):
-                    _input_id = tokenizer(role).input_ids + nl_tokens + [IMAGE_TOKEN_INDEX] + nl_tokens + tokenizer(sentence["value"][len("<image>") :]).input_ids + [im_end] + nl_tokens
-                else:
-                    _input_id = []
-                    split_value = sentence["value"].split('<image>\n')
-                    _input_id += tokenizer(role).input_ids + nl_tokens
-                    for idx, cur_value in enumerate(split_value):
-                        if idx == len(split_value) - 1:
+                # if sentence["value"].startswith("<image>"):
+                #     _input_id = tokenizer(role).input_ids + nl_tokens + [IMAGE_TOKEN_INDEX] + nl_tokens + tokenizer(sentence["value"][len("<image>\n") :]).input_ids + [im_end] + nl_tokens
+                # else:
+                _input_id = []
+                split_value = sentence["value"].split('<image>\n')
+                _input_id += tokenizer(role).input_ids + nl_tokens
+                for idx, cur_value in enumerate(split_value):
+                    if idx == len(split_value) - 1:
+                        if cur_value == '':
+                            _input_id = _input_id + [im_end] + nl_tokens
+                        else:
                             _input_id = _input_id + tokenizer(cur_value).input_ids + [im_end] + nl_tokens
+                    else:
+                        if cur_value == '':
+                            _input_id = _input_id+ [IMAGE_TOKEN_INDEX] + nl_tokens
                         else:
                             _input_id = _input_id + tokenizer(cur_value).input_ids + [IMAGE_TOKEN_INDEX] + nl_tokens
                 # # add end of text token
