@@ -749,8 +749,13 @@ def create_siglip_vit(
         num_classes=0
     )
 
-    if path is not None and os.path.exists(path):
-        ckpt = path
+    if path is not None and os.path.exists(path) and os.path.isabs(path):
+        if os.path.isfile(path):
+            ckpt = path
+        elif os.path.isdir(path):
+            ckpt = os.path.join(path, "oryx_vit.pth")
+        else:
+            raise ValueError(f"{path} is not a valid path")
     else:
         print(f"Warning: Model checkpoint not found at {path}")
         print("Try to download from Hugging Face model hub")
@@ -801,7 +806,11 @@ class OryxViTWrapper(nn.Module):
             print('{} is already loaded, `load_model` called again, skipping.'.format(self.vision_tower_name))
             return
         
-        self.image_processor = CLIPImageProcessor.from_pretrained("openai/clip-vit-large-patch14")
+        if os.path.isabs(self.path):
+            self.image_processor = CLIPImageProcessor.from_pretrained(os.path.join(os.path.dirname(self.path), "clip-vit-large-patch14"))
+        else:
+            self.image_processor = CLIPImageProcessor.from_pretrained("openai/clip-vit-large-patch14")
+        
         self.image_processor.image_mean = [0.5, 0.5, 0.5]
         self.image_processor.image_std = [0.5, 0.5, 0.5]
         print("Loading vision model...")
