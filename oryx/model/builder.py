@@ -21,7 +21,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
     if "oryx" in model_name.lower():
         # Load Oryx model
-        if "7b" in model_name.lower():
+        if "qwen" in model_name.lower():
             from oryx.model.language_model.oryx_qwen import OryxQwenConfig
             tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
             if overwrite_config is not None:
